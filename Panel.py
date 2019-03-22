@@ -3,6 +3,8 @@
 from enum import Enum
 from PyQt5.QtWidgets import *
 
+from Utility import launch_application
+
 
 class Key(str, Enum):
     DEFAULT_INDEX = 'default_index'
@@ -44,6 +46,22 @@ class TabPanel(QTabWidget):
 
 
 class _Illustration:
+    @staticmethod
+    @launch_application
+    def launch_simplevboxpanel():
+        return _Illustration.SimpleVBoxPanel()
+
+    @staticmethod
+    @launch_application
+    def launch_simpletabpanel():
+        return _Illustration.SimpleTabPanel()
+
+    class SimpleVBoxPanel(BaseVBoxPanel):
+        def _init_layout(self):
+            layout = self.layout()
+            layout.addWidget(QLabel("Test"))
+            layout.addWidget(QLineEdit())
+
     class SimpleTabPanel(TabPanel):
         def __init__(self):
             config = {
@@ -62,8 +80,4 @@ class _Illustration:
 
 
 if __name__ == "__main__":
-    import sys
-    app = QApplication(sys.argv)
-    window = _Illustration.SimpleTabPanel()
-    window.show()
-    app.exec_()
+    _Illustration.launch_simplevboxpanel()

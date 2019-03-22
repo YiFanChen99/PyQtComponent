@@ -4,6 +4,8 @@ from enum import Enum
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import Qt
 
+from Utility import launch_application
+
 
 class Key(str, Enum):
     TITLE = 'title'
@@ -61,6 +63,11 @@ class _WindowExtendable(object):
 
 
 class _Illustration:
+    @staticmethod
+    @launch_application
+    def launch_simplewindow():
+        return _Illustration.SimpleWindow()
+
     class SimpleWindow(BaseWindow):
         def _create_main_panel(self):
             return QWidget(self)
@@ -76,8 +83,4 @@ class _Illustration:
 
 
 if __name__ == "__main__":
-    import sys
-    app = QApplication(sys.argv)
-    window = _Illustration.SimpleWindow()
-    window.show()
-    app.exec_()
+    _Illustration.launch_simplewindow()
