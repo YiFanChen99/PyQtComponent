@@ -3,8 +3,6 @@
 from enum import Enum
 from PyQt5.QtWidgets import *
 
-from Utility import launch_application
-
 
 class Key(str, Enum):
     DEFAULT_INDEX = 'default_index'
@@ -45,39 +43,40 @@ class TabPanel(QTabWidget):
         self.setCurrentIndex(self.default_index)
 
 
-class _Illustration:
-    @staticmethod
-    @launch_application
-    def launch_simplevboxpanel():
-        return _Illustration.SimpleVBoxPanel()
-
-    @staticmethod
-    @launch_application
-    def launch_simpletabpanel():
-        return _Illustration.SimpleTabPanel()
-
-    class SimpleVBoxPanel(BaseVBoxPanel):
-        def _init_layout(self):
-            layout = self.layout()
-            layout.addWidget(QLabel("Test"))
-            layout.addWidget(QLineEdit())
-
-    class SimpleTabPanel(TabPanel):
-        def __init__(self):
-            config = {
-                Key.TABS: [{
-                    Key.CONSTRUCTOR: QLabel,
-                    Key.ARGS: ['LAAAAAAAAAA'],
-                    Key.TEXT: 'Label'
-                }, {
-                    Key.CONSTRUCTOR: QLineEdit,
-                    Key.KWARGS: {'maxLength': 3},
-                    Key.TEXT: 'LE'
-                }],
-                Key.DEFAULT_INDEX: 1
-            }
-            super().__init__(None, config=config)
-
-
 if __name__ == "__main__":
+    from Utility import launch_application
+
+    class _Illustration:
+        @staticmethod
+        @launch_application
+        def launch_simplevboxpanel():
+            return _Illustration.SimpleVBoxPanel()
+
+        @staticmethod
+        @launch_application
+        def launch_simpletabpanel():
+            return _Illustration.SimpleTabPanel()
+
+        class SimpleVBoxPanel(BaseVBoxPanel):
+            def _init_layout(self):
+                layout = self.layout()
+                layout.addWidget(QLabel("Test"))
+                layout.addWidget(QLineEdit())
+
+        class SimpleTabPanel(TabPanel):
+            def __init__(self):
+                config = {
+                    Key.TABS: [{
+                        Key.CONSTRUCTOR: QLabel,
+                        Key.ARGS: ['LAAAAAAAAAA'],
+                        Key.TEXT: 'Label'
+                    }, {
+                        Key.CONSTRUCTOR: QLineEdit,
+                        Key.KWARGS: {'maxLength': 3},
+                        Key.TEXT: 'LE'
+                    }],
+                    Key.DEFAULT_INDEX: 1
+                }
+                super().__init__(None, config=config)
+
     _Illustration.launch_simplevboxpanel()
