@@ -6,12 +6,14 @@ from PyQt5.QtGui import QBrush, QColor
 
 
 class ProxyTableView(QTableView):
-    def __init__(self, source_model=None, proxy_class=QSortFilterProxyModel):
-        if not issubclass(proxy_class, QSortFilterProxyModel):
-            raise TypeError
+    def __init__(self, source_model=None, proxy_model=None):
+        if proxy_model is None:
+            proxy_model = QSortFilterProxyModel()
+        elif not isinstance(proxy_model, QSortFilterProxyModel):
+            raise TypeError('proxy_model')
 
         super().__init__()
-        self.proxy_model = proxy_class()
+        self.proxy_model = proxy_model
         if source_model:
             self.setSourceModel(source_model)
         self.setModel(self.proxy_model)
@@ -24,6 +26,10 @@ class ProxyTableView(QTableView):
     # noinspection PyPep8Naming
     def setSourceModel(self, model):
         self.proxy_model.setSourceModel(model)
+
+    @property
+    def source_model(self):
+        return self.proxy_model.sourceModel()
 
 
 class BaseTableModel(QAbstractTableModel):
@@ -125,7 +131,7 @@ if __name__ == "__main__":
         @launch_application
         def launch_filter_view():
             return ProxyTableView(_Illustration.SimpleModel(),
-                                  proxy_class=_Illustration.Filter3ProxyModel)
+                                  proxy_model=_Illustration.Filter3ProxyModel())
 
     # _Illustration.launch_simple_view()
     _Illustration.launch_filter_view()
