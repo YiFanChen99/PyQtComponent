@@ -32,6 +32,108 @@ class ProxyTableView(QTableView):
         return self.proxy_model.sourceModel()
 
 
+class ProxyModel(QSortFilterProxyModel):
+    def __init__(self, conditions=None):
+        super().__init__()
+        self.conditions = {}
+        self.row_rules = {}
+        self.column_rules = {}
+        for cond in conditions:
+            self.conditions[cond.key] = cond
+            if cond.is_standard:
+                self.row_rules[cond.key] = cond.row_rule
+                self.column_rules[cond.key] = cond.column_rule
+
+    def filterAcceptsRow(self, row, model_index):
+        record = self.sourceModel().model_data[row]
+        return all(rule(record) for rule in self.row_rules.values())
+
+    def filterAcceptsColumn(self, column, model_index):
+        header = self.sourceModel().get_column_header(column)
+        return all(rule(header) for rule in self.column_rules.values())
+
+    def get_condition_value(self, key):
+        return self.conditions[key].standard_value
+
+    def update_condition_value(self, key, value):
+        condition = self.conditions[key]
+
+        self.beginResetModel()
+        condition.standard_value = value
+        self._update_rules_by_condition(condition)
+        self.endResetModel()
+
+    def change_condition(self, condition):
+        self.beginResetModel()
+        self.conditions[condition.key] = condition
+        self._update_rules_by_condition(condition)
+        self.endResetModel()
+
+    def _update_rules_by_condition(self, condition):
+        if condition.is_standard:
+            self.row_rules[condition.key] = condition.row_rule
+            self.column_rules[condition.key] = condition.column_rule
+        else:  # remove old rule if existed
+            self.row_rules.pop(condition.key, None)
+            self.column_rules.pop(condition.key, None)
+
+
+class ProxyModelCondition(object):
+    @staticmethod
+    def generate_default_record_getter(key):
+        return lambda record: getattr(record, key)
+
+    @staticmethod
+    def generate_default_comparator():
+        return lambda record_value, standard: record_value == standard
+
+    def __init__(self, key, value=None, getter=None, comparator=None, hidden_column=None):
+        """
+        :param key: Id, usually use attr name
+        :param value: Standard value
+        :param getter: Getter for value-from-record.
+        :param comparator: How to compare record-value with standard-value.
+        :param hidden_column: The hidden column when is_standard.
+        """
+        self.key = key
+        self.standard_value = value
+        self._init_getter(getter)
+        self._init_comparator(comparator)
+        self._init_hidden_column(hidden_column, comparator)
+
+    def _init_getter(self, getter):
+        if getter is None:
+            getter = self.generate_default_record_getter(self.key)
+        self.record_getter = getter
+
+    def _init_comparator(self, comparator):
+        if comparator is None:
+            comparator = self.generate_default_comparator()
+        self.comparator = comparator
+
+    def _init_hidden_column(self, hidden_column, comparator):
+        if hidden_column is None:
+            hidden_column = True if comparator is None else False
+        self.hidden_column = hidden_column
+
+    @property
+    def is_standard(self):
+        return self.standard_value is not None
+
+    @property
+    def row_rule(self):
+        if not self.is_standard:
+            raise ValueError
+        return lambda record: self.comparator(
+            self.record_getter(record), self.standard_value)
+
+    @property
+    def column_rule(self):
+        if not self.is_standard:
+            raise ValueError
+        return lambda header: header != self.hidden_column
+
+
 class BaseTableModel(QAbstractTableModel):
     """
     QAbstractTableModel with cache-data
@@ -119,7 +221,7 @@ if __name__ == "__main__":
         def launch_simple_view():
             return ProxyTableView(_Illustration.SimpleModel())
 
-        class Filter3ProxyModel(QSortFilterProxyModel):
+        class FilterZ3ProxyModel(QSortFilterProxyModel):
             def filterAcceptsRow(self, row, model_index):
                 # Filter if value mod 3 is 0
                 return self.sourceModel().model_data[row] % 3 != 0
@@ -129,9 +231,25 @@ if __name__ == "__main__":
 
         @staticmethod
         @launch_application
-        def launch_filter_view():
+        def launch_simple_filter_view():
             return ProxyTableView(_Illustration.SimpleModel(),
-                                  proxy_model=_Illustration.Filter3ProxyModel())
+                                  proxy_model=_Illustration.FilterZ3ProxyModel())
+
+        class Filter9ProxyModel(ProxyModel):
+            def __init__(self):
+                conditions = (
+                    ProxyModelCondition(
+                        key='int', value=9, getter=lambda rec: rec,
+                        comparator=lambda value, std: value != std),
+                )
+                super().__init__(conditions)
+
+        @staticmethod
+        @launch_application
+        def launch_condition_filter_view():
+            return ProxyTableView(_Illustration.SimpleModel(),
+                                  proxy_model=_Illustration.Filter9ProxyModel())
 
     # _Illustration.launch_simple_view()
-    _Illustration.launch_filter_view()
+    # _Illustration.launch_simple_filter_view()
+    _Illustration.launch_condition_filter_view()
